@@ -68,8 +68,12 @@ var ToolPanel = LeftPanel.extend({
             title   : _l( 'Shared workflows' ),
             href    : 'workflow/list_published'
         }));
+        // add user workflow list
+        self.$( '#internal-workflows' ).append( self._templateTool({
+            title   : _l( 'Your workflows' ),
             href    : 'workflow/list_for_run'
         }));
+        // add workflow which the user would like to include on the homepage
         _.each( self.stored_workflow_menu_entries, function( menu_entry ){
             self.$( '#internal-workflows' ).append( self._templateTool({
                 title : menu_entry.stored_workflow.name,
