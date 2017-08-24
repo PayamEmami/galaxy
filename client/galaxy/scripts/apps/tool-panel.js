@@ -63,9 +63,11 @@ var ToolPanel = LeftPanel.extend({
     /** build the dom for the workflow portion of the tool menu */
     _renderWorkflowMenu : function(){
         var self = this;
-        // add internal workflow list
+        // add shared workflow list
         self.$( '#internal-workflows' ).append( self._templateTool({
-            title   : _l( 'All workflows' ),
+            title   : _l( 'Shared workflows' ),
+            href    : 'workflow/list_published'
+        }));
             href    : 'workflow/list_for_run'
         }));
         _.each( self.stored_workflow_menu_entries, function( menu_entry ){
