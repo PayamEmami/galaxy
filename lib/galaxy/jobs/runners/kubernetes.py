@@ -4,6 +4,7 @@ Offload jobs to a Kubernetes cluster.
 
 import logging
 import re
+import pprint
 from os import environ as os_environ
 
 from six import text_type
@@ -52,6 +53,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_supplemental_group_id=dict(map=str),
             k8s_pull_policy=dict(map=str, default="Default"),
             k8s_fs_group_id=dict(map=int),
+            k8s_default_requests_cpu=dict(map=str, default="500m"),
+            k8s_default_requests_memory=dict(map=str, default="500Mi"),
+            k8s_default_limits_cpu=dict(map=str, default="1"),
+            k8s_default_limits_memory=dict(map=str, default="1Gi"),
             k8s_pod_retrials=dict(map=int, valid=lambda x: int > 0, default=3))
 
         if 'runner_param_specs' not in kwargs:
@@ -101,6 +106,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             },
             "spec": self.__get_k8s_job_spec(job_wrapper)
         }
+        pp = pprint.PrettyPrinter()
+        log.debug("k8s Job object")
+        log.debug(pp.pformat(k8s_job_obj))
 
         # Checks if job exists
         job = Job(self._pykube_api, k8s_job_obj)
@@ -214,6 +222,16 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # TODO possibly shell needs to be set by job_wrapper
             "command": ["/bin/bash", "-c", job_wrapper.runner_command_line],
             "workingDir": job_wrapper.working_directory,
+            "resources": {
+                "requests": {
+                    "memory": self.__get_memory_request(job_wrapper),
+                    "cpu": self.__get_cpu_request(job_wrapper)
+                },
+                "limits": {
+                    "memory": self.__get_memory_limit(job_wrapper),
+                    "cpu": self.__get_cpu_limit(job_wrapper)
+                }
+            },
             "volumeMounts": [{
                 "mountPath": self.runner_params['k8s_persistent_volume_claim_mount_path'],
                 "name": self._galaxy_vol_name
@@ -231,6 +249,46 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
     #    for k,v self.runner_params:
     #        if k.startswith("container_port_"):
+
+    def __get_memory_request(self, job_wrapper):
+        """Obtains memory requests for job, checking if available on the destination, otherwise using the default"""
+        job_destinantion = job_wrapper.job_destination
+
+        if 'requests_memory' in job_destinantion.params:
+            log.warn("Using requests memory at:"+job_destinantion.params['requests_memory'])
+            return job_destinantion.params['requests_memory']
+        log.warn("Using requests memory at:" + self.runner_params['k8s_default_requests_memory'])
+        return self.runner_params['k8s_default_requests_memory']
+
+    def __get_memory_limit(self, job_wrapper):
+        """Obtains memory limits for job, checking if available on the destination, otherwise using the default"""
+        job_destinantion = job_wrapper.job_destination
+
+        if 'limits_memory' in job_destinantion.params:
+            log.warn("Using limits memory from dest:" + job_destinantion.params['limits_memory'])
+            return job_destinantion.params['limits_memory']
+        log.warn("Using limits memory from default:" + self.runner_params['k8s_default_limits_memory'])
+        return self.runner_params['k8s_default_limits_memory']
+
+    def __get_cpu_request(self, job_wrapper):
+        """Obtains cpu requests for job, checking if available on the destination, otherwise using the default"""
+        job_destinantion = job_wrapper.job_destination
+
+        if 'requests_cpu' in job_destinantion.params:
+            log.warn("Using requests cpu from dest:" + job_destinantion.params['requests_cpu'])
+            return job_destinantion.params['requests_cpu']
+        log.warn("Using requests cpu from default:" + self.runner_params['k8s_default_requests_cpu'])
+        return self.runner_params['k8s_default_requests_cpu']
+
+    def __get_cpu_limit(self, job_wrapper):
+        """Obtains cpu requests for job, checking if available on the destination, otherwise using the default"""
+        job_destinantion = job_wrapper.job_destination
+
+        if 'limits_cpu' in job_destinantion.params:
+            return job_destinantion.params['limits_cpu']
+        return self.runner_params['k8s_default_limits_cpu']
+
+
 
     def __assemble_k8s_container_image_name(self, job_wrapper):
         """Assembles the container image name as repo/owner/image:tag, where repo, owner and tag are optional"""
