@@ -53,10 +53,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_supplemental_group_id=dict(map=str),
             k8s_pull_policy=dict(map=str, default="Default"),
             k8s_fs_group_id=dict(map=int),
-            k8s_default_requests_cpu=dict(map=str, default="500m"),
-            k8s_default_requests_memory=dict(map=str, default="500Mi"),
-            k8s_default_limits_cpu=dict(map=str, default="1"),
-            k8s_default_limits_memory=dict(map=str, default="1Gi"),
+            k8s_default_requests_cpu=dict(map=str, default=None),
+            k8s_default_requests_memory=dict(map=str, default=None),
+            k8s_default_limits_cpu=dict(map=str, default=None),
+            k8s_default_limits_memory=dict(map=str, default=None),
             k8s_pod_retrials=dict(map=int, valid=lambda x: int > 0, default=3))
 
         if 'runner_param_specs' not in kwargs:
@@ -222,21 +222,15 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # TODO possibly shell needs to be set by job_wrapper
             "command": ["/bin/bash", "-c", job_wrapper.runner_command_line],
             "workingDir": job_wrapper.working_directory,
-            "resources": {
-                "requests": {
-                    "memory": self.__get_memory_request(job_wrapper),
-                    "cpu": self.__get_cpu_request(job_wrapper)
-                },
-                "limits": {
-                    "memory": self.__get_memory_limit(job_wrapper),
-                    "cpu": self.__get_cpu_limit(job_wrapper)
-                }
-            },
             "volumeMounts": [{
                 "mountPath": self.runner_params['k8s_persistent_volume_claim_mount_path'],
                 "name": self._galaxy_vol_name
             }]
         }
+
+        resources = self.__get_resources(job_wrapper)
+        if resources:
+            k8s_container['resources'] = resources
 
         if self._default_pull_policy:
             k8s_container["imagePullPolicy"] = self._default_pull_policy
@@ -250,13 +244,42 @@ class KubernetesJobRunner(AsynchronousJobRunner):
     #    for k,v self.runner_params:
     #        if k.startswith("container_port_"):
 
+    def __get_resources(self, job_wrapper):
+        mem_request = self.__get_memory_request(job_wrapper)
+        cpu_request = self.__get_cpu_request(job_wrapper)
+
+        mem_limit = self.__get_memory_limit(job_wrapper)
+        cpu_limit = self.__get_cpu_limit(job_wrapper)
+
+        requests = {}
+        limits = {}
+
+        if mem_request:
+            requests['memory'] = mem_request
+        if cpu_request:
+            requests['cpu'] = cpu_request
+
+        if mem_limit:
+            limits['memory'] = mem_limit
+        if cpu_limit:
+            limits['cpu'] = cpu_limit
+
+        resources = {}
+        if requests:
+            resources['requests'] = requests
+        if limits:
+            resources['limits'] = limits
+
+        return resources
+
+
     def __get_memory_request(self, job_wrapper):
         """Obtains memory requests for job, checking if available on the destination, otherwise using the default"""
         job_destinantion = job_wrapper.job_destination
 
         if 'requests_memory' in job_destinantion.params:
             log.warn("Using requests memory at:"+job_destinantion.params['requests_memory'])
-            return job_destinantion.params['requests_memory']
+            return self.__transform_memory_value(job_destinantion.params['requests_memory'])
         log.warn("Using requests memory at:" + self.runner_params['k8s_default_requests_memory'])
         return self.runner_params['k8s_default_requests_memory']
 
@@ -266,7 +289,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         if 'limits_memory' in job_destinantion.params:
             log.warn("Using limits memory from dest:" + job_destinantion.params['limits_memory'])
-            return job_destinantion.params['limits_memory']
+            return self.__transform_memory_value(job_destinantion.params['limits_memory'])
         log.warn("Using limits memory from default:" + self.runner_params['k8s_default_limits_memory'])
         return self.runner_params['k8s_default_limits_memory']
 
@@ -276,7 +299,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         if 'requests_cpu' in job_destinantion.params:
             log.warn("Using requests cpu from dest:" + job_destinantion.params['requests_cpu'])
-            return job_destinantion.params['requests_cpu']
+            return self.__transform_cpu_value(job_destinantion.params['requests_cpu'])
         log.warn("Using requests cpu from default:" + self.runner_params['k8s_default_requests_cpu'])
         return self.runner_params['k8s_default_requests_cpu']
 
@@ -285,9 +308,44 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         job_destinantion = job_wrapper.job_destination
 
         if 'limits_cpu' in job_destinantion.params:
-            return job_destinantion.params['limits_cpu']
+            return self.__transform_cpu_value(job_destinantion.params['limits_cpu'])
         return self.runner_params['k8s_default_limits_cpu']
 
+    def __transform_cpu_value(self, cpu_value):
+        """Transforms cpu value
+
+           If the value is 0 and not a string, then None is returned.
+           If the value is below 1, then it is multiplied by 1000 and expressed as Megabytes.
+           If the value is above 1 or an integer, then it is truncated and expressed as Gigabytes.
+           If it is an already formatted string, it is returned as it was.
+        """
+        if not isinstance(cpu_value, str) and float(cpu_value) == 0:
+            return None
+        if isinstance(cpu_value, float):
+            if cpu_value < 1:
+                return str(int(cpu_value*1000))+"m"
+            else:
+                return str(int(cpu_value))
+        elif isinstance(cpu_value, int) or isinstance(cpu_value, str):
+            return str(cpu_value)
+
+    def __transform_memory_value(self, mem_value):
+        """Transforms memory value
+
+           If the value is below 1, then it is multiplied by 1000 and expressed as Megabytes.
+           If the value is above 1 or an integer, then it is truncated and expressed as Gigabytes.
+           If it is an already formatted string, it is returned as it was.
+        """
+        if not isinstance(mem_value, str) and float(mem_value) == 0:
+            return None
+        if isinstance(mem_value, float):
+            if mem_value < 1:
+                return str(int(mem_value*1000))+"M"
+            else:
+                return str(int(mem_value))+"G"
+        elif isinstance(mem_value, int):
+            return str(mem_value)+"G"
+        return mem_value
 
 
     def __assemble_k8s_container_image_name(self, job_wrapper):
