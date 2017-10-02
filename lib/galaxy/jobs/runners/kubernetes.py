@@ -278,9 +278,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         job_destinantion = job_wrapper.job_destination
 
         if 'requests_memory' in job_destinantion.params:
-            log.warn("Using requests memory at:"+job_destinantion.params['requests_memory'])
+            log.debug("Using requests memory from dest:"+str(job_destinantion.params['requests_memory']))
             return self.__transform_memory_value(job_destinantion.params['requests_memory'])
-        log.warn("Using requests memory at:" + self.runner_params['k8s_default_requests_memory'])
+        log.debug("Using requests memory from runner:" + str(self.runner_params['k8s_default_requests_memory']))
         return self.runner_params['k8s_default_requests_memory']
 
     def __get_memory_limit(self, job_wrapper):
@@ -288,9 +288,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         job_destinantion = job_wrapper.job_destination
 
         if 'limits_memory' in job_destinantion.params:
-            log.warn("Using limits memory from dest:" + job_destinantion.params['limits_memory'])
+            log.debug("Using limits memory from dest:" + str(job_destinantion.params['limits_memory']))
             return self.__transform_memory_value(job_destinantion.params['limits_memory'])
-        log.warn("Using limits memory from default:" + self.runner_params['k8s_default_limits_memory'])
+        log.debug("Using limits memory from runner:" + str(self.runner_params['k8s_default_limits_memory']))
         return self.runner_params['k8s_default_limits_memory']
 
     def __get_cpu_request(self, job_wrapper):
@@ -298,9 +298,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         job_destinantion = job_wrapper.job_destination
 
         if 'requests_cpu' in job_destinantion.params:
-            log.warn("Using requests cpu from dest:" + job_destinantion.params['requests_cpu'])
+            log.debug("Using requests cpu from dest:" + str(job_destinantion.params['requests_cpu']))
             return self.__transform_cpu_value(job_destinantion.params['requests_cpu'])
-        log.warn("Using requests cpu from default:" + self.runner_params['k8s_default_requests_cpu'])
+        log.debug("Using requests cpu from runner:" + str(self.runner_params['k8s_default_requests_cpu']))
         return self.runner_params['k8s_default_requests_cpu']
 
     def __get_cpu_limit(self, job_wrapper):
