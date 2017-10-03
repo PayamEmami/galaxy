@@ -315,34 +315,30 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         """Transforms cpu value
 
            If the value is 0 and not a string, then None is returned.
-           If the value is below 1, then it is multiplied by 1000 and expressed as Megabytes.
-           If the value is above 1 or an integer, then it is truncated and expressed as Gigabytes.
+           If the value is a float, then it is multiplied by 1000 and expressed as mili cpus.
+           If the value is an integer, then it is and expressed as CPUs (no unit).
            If it is an already formatted string, it is returned as it was.
         """
         if not isinstance(cpu_value, str) and float(cpu_value) == 0:
             return None
         if isinstance(cpu_value, float):
-            if cpu_value < 1:
-                return str(int(cpu_value*1000))+"m"
-            else:
-                return str(int(cpu_value))
-        elif isinstance(cpu_value, int) or isinstance(cpu_value, str):
+            return str(int(cpu_value*1000))+"m"
+        elif isinstance(cpu_value, int):
             return str(cpu_value)
+        return cpu_value
 
     def __transform_memory_value(self, mem_value):
         """Transforms memory value
 
-           If the value is below 1, then it is multiplied by 1000 and expressed as Megabytes.
-           If the value is above 1 or an integer, then it is truncated and expressed as Gigabytes.
+           If the value is 0 and not a string, then None is returned.
+           If the value has a decimal part, then it is multiplied by 1000 and expressed as Megabytes.
+           If the value is an integer, then it is truncated and expressed as Gigabytes.
            If it is an already formatted string, it is returned as it was.
         """
         if not isinstance(mem_value, str) and float(mem_value) == 0:
             return None
         if isinstance(mem_value, float):
-            if mem_value < 1:
-                return str(int(mem_value*1000))+"M"
-            else:
-                return str(int(mem_value))+"G"
+            return str(int(mem_value*1000))+"M"
         elif isinstance(mem_value, int):
             return str(mem_value)+"G"
         return mem_value
