@@ -136,6 +136,12 @@ class MzML(ProteomicsXml):
     blurb = 'mzML Mass Spectrometry data'
     root = "(mzML|indexedmzML)"
 
+class NmrML(ProteomicsXml):
+    """nmrML data"""
+    edam_format = "format_3244"
+    file_ext = "nmrml"
+    blurb = 'nmrML data'
+    root = "nmrML"
 
 class ProtXML(ProteomicsXml):
     """protXML data"""
