@@ -3,7 +3,7 @@
 
 [docker]
 # Command to execute docker. For example `sudo docker` or `docker-lxc`.
-command = docker {docker_args}
+#command = docker {docker_args}
 
 # The docker image name that should be started.
 image = pcm32/nmrprocflow-ie:latest
