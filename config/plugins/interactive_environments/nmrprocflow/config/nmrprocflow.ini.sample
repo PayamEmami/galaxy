@@ -4,7 +4,7 @@
 # Command to execute docker. For example `sudo docker` or `docker-lxc`.
 #command = docker {docker_args}
 # The docker image name that should be started.
-image = nmrprocflow/nmrprocflow:latest
+image = pcm32/nmrprocflow-ie:latest
 # Additional arguments that are passed to the `docker run` command.
 #command_inject = --sig-proxy=true -e DEBUG=false
 # URL to access the Galaxy API with from the spawn Docker container, if empty
