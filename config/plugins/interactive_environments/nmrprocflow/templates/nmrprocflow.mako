@@ -21,7 +21,7 @@ ie_request.launch(
 )
 # Only once the container is launched can we template our URLs. The ie_request
 # doesn't have all of the information needed until the container is running.
-url = ie_request.url_template('${PROXY_URL}/nmrprocflow/')
+url = ie_request.url_template('${PROXY_URL}/npflow/')
 
 
 %>
