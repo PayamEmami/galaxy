@@ -90,3 +90,6 @@ ecdsa==0.13
 
 # GenomeSpace dependencies
 python-genomespaceclient==0.1.8
+
+# ISA
+-e git://github.com/ISA-tools/isa-rwval.git#egg=isa-rwval
