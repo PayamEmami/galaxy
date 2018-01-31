@@ -337,7 +337,15 @@ def add_file(dataset, registry, json_file, output_path):
         datatype.groom_dataset_content(output_path)
 
 
-def add_composite_file(dataset, json_file, output_path, files_path):
+def add_composite_file(dataset, registry, json_file, output_path, files_path):
+
+    # Find data type
+    if dataset.file_type is not None:
+        try:
+            datatype = registry.get_datatype_by_extension(dataset.file_type)
+        except Exception as e:
+            print("Unable to instantiate the datatype object for the file type '%s'" % dataset.file_type)
+
     if dataset.composite_files:
         os.mkdir(files_path)
         for name, value in dataset.composite_files.items():
@@ -361,9 +369,17 @@ def add_composite_file(dataset, json_file, output_path, files_path):
                         sniff.convert_newlines_sep2tabs(dp, tmp_dir=tmpdir, tmp_prefix=tmp_prefix)
                     else:
                         sniff.convert_newlines(dp, tmp_dir=tmpdir, tmp_prefix=tmp_prefix)
-                shutil.move(dp, os.path.join(files_path, name))
+
+                # move the file to its final destination
+                file_output_path = os.path.join(files_path, name)
+                shutil.move(dp, file_output_path)
+                # groom the dataset file content if required by the corresponding datatype definition
+                if datatype.dataset_content_needs_grooming(file_output_path):
+                    datatype.groom_dataset_content(file_output_path)
+
     # Move the dataset to its "real" path
     shutil.move(dataset.primary_file, output_path)
+
     # Write the job info
     info = dict(type='dataset',
                 dataset_id=dataset.dataset_id,
@@ -402,7 +418,7 @@ def __main__():
         try:
             if dataset.type == 'composite':
                 files_path = output_paths[int(dataset.dataset_id)][1]
-                add_composite_file(dataset, json_file, output_path, files_path)
+                add_composite_file(dataset, registry, json_file, output_path, files_path)
             else:
                 add_file(dataset, registry, json_file, output_path)
         except UploadProblemException as e:
