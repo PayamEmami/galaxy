@@ -109,6 +109,7 @@ class BaseJobRunner(object):
     def put(self, job_wrapper):
         """Add a job to the queue (by job identifier), indicate that the job is ready to run.
         """
+        log.debug("Job [%s] destination is %s.", job_wrapper.job_id, job_wrapper.job_destination.id)
         put_timer = ExecutionTimer()
         job = job_wrapper.get_job()
         # Change to queued state before handing to worker thread so the runner won't pick it up again
