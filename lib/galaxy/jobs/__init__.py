@@ -79,7 +79,7 @@ class JobDestination(Bunch):
         if self.tags is not None:
             self['tags'] = [x.strip() for x in self.tags.split(',')]
             
-        log.debug("JobDestination created with id ...")
+        log.debug("JobDestination created with id %s." % self['id'])
 
 class JobToolConfiguration(Bunch):
     """
