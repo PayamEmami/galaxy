@@ -80,8 +80,9 @@ class JobDestination(Bunch):
             self['tags'] = [x.strip() for x in self.tags.split(',')]
             
         log.debug("JobDestination: %r." % self)
+        log.debug("JobDestination: %r." % kwds)
         for attr, value in self.__dict__.iteritems():
-	        log.debug(str(attr) + ': ' + str(value))
+            log.debug("JobDestination." + str(attr) + ' = ' + str(value))
 
 class JobToolConfiguration(Bunch):
     """
