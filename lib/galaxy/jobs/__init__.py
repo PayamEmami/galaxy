@@ -82,7 +82,7 @@ class JobDestination(Bunch):
         log.debug("JobDestination: %r." % self)
         log.debug("JobDestination: %r." % kwds)
         for attr, value in self.__dict__.iteritems():
-            log.debug("JobDestination." + str(attr) + ' = ' + str(value))
+            log.debug("JobDestination.%s = %s" % (attr, value))
 
 class JobToolConfiguration(Bunch):
     """
@@ -748,19 +748,32 @@ class JobWrapper(object, HasResourceParameters):
         # directory to be set before prepare is run, or else premature deletion
         # and job recovery fail.
         # Create the working dir if necessary
+        log.debug("JobWrapper::__init__ 01")
+        log.debug("JobWrapper::__init__ 01.1 job = %r" % job)
+        log.debug("JobWrapper::__init__ 01.2 queue = %r" % queue)
         self._create_working_directory()
+        log.debug("JobWrapper::__init__ 02")
         self.dataset_path_rewriter = self._job_dataset_path_rewriter(self.working_directory)
+        log.debug("JobWrapper::__init__ 03")
         self.output_paths = None
         self.output_hdas_and_paths = None
         self.tool_provided_job_metadata = None
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
         self.external_output_metadata = metadata.JobExternalOutputMetadataWrapper(job)
+        log.debug("JobWrapper::__init__ 04")
         self.job_runner_mapper = JobRunnerMapper(self, queue.dispatcher.url_to_destination, self.app.job_config)
+        log.debug("JobWrapper::__init__ 05")
+        log.debug("JobWrapper::__init__ 05.1 %r" % self.job_runner_mapper)
         self.params = None
         if job.params:
+            log.debug("JobWrapper::__init__ 05.2.1")
             self.params = loads(job.params)
+            log.debug("JobWrapper::__init__ 05.2.2")
         if use_persisted_destination:
+            log.debug("JobWrapper::__init__ 05.3.1")
             self.job_runner_mapper.cached_job_destination = JobDestination(from_job=job)
+            log.debug("JobWrapper::__init__ 05.3.2")
+        log.debug("JobWrapper::__init__ 06")
 
         self.__commands_in_new_shell = True
         self.__user_system_pwent = None
