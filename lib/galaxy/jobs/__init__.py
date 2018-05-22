@@ -83,6 +83,7 @@ class JobDestination(Bunch):
         log.debug("JobDestination: %r." % kwds)
         for attr, value in self.__dict__.iteritems():
             log.debug("JobDestination.%s = %s" % (attr, value))
+        log.debug('CALLSTACK: ' + ''.join(traceback.format_stack()))
 
 class JobToolConfiguration(Bunch):
     """
