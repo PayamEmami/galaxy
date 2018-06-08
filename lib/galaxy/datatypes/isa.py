@@ -285,8 +285,7 @@ class _Isa(data.Data):
         # prepare the preview of the ISA dataset
         investigation = self._get_investigation(dataset)
         if investigation is None:
-            html = """<html><header><title>Error while reading ISA archive.</title></header>
-                   <body>
+            html = """<html><body>
                         <h1>An error occured while reading content of ISA archive.</h1>
                         <p>If you have tried to load your archive with the uploader by selecting isa-tab as composite data type, then try to load it again with isa-json instead. Conversely, if you have tried to load your archive with the uploader by selecting isa-json as composite data type, then try isa-tab instead.</p>
                         <p>You may also try to look into your zip file in order to find out if this is a proper ISA archive. If you see a file i_Investigation.txt inside, then it is an ISA-Tab archive. If you see a file with extension .json inside, then it is an ISA-JSON archive. If you see nothing like that, then either your ISA archive is corrupted, or it is not an ISA archive.</p>
@@ -312,20 +311,26 @@ class _Isa(data.Data):
                     html += '<p>Technology type: %s</p>' % assay.technology_type.term    # OntologyAnnotation
                     html += '<p>Technology platform: %s</p>' % assay.technology_platform
                     if assay.data_files is not None:
-                        html += '<p>Data files:</p>'
-                        html += '<ul>'
-                        for data_file in assay.data_files:
-                            if data_file.filename != '':
-                                html += '<li>' + escape(util.unicodify(str(data_file.filename), 'utf-8')) + ' - ' + escape(util.unicodify(str(data_file.label), 'utf-8')) + '</li>'
-                        html += '</ul>'
-
-            html += '</body></html>'
+                        file_types = set(x.label for x in assay.data_files)
+                        data_files = {}
+                        for file_type in file_types:
+                            data_files[file_type] = sorted([x.filename for x in
+                                                     assay.data_files if
+                                                     x.label == file_type])
+                        for label, filenames in data_files.items():
+                            html += '<details><summary>Data files ({label})</summary>'.format(label=label)
+                            html += '<ul>'
+                            for filename in filenames:
+                                if filename != '':
+                                    html += '<li>' + escape(util.unicodify(str(filename), 'utf-8')) + '</li>'
+                            html += '</ul></details>'
 
         # Set mime type
         mime = 'text/html'
         self._clean_and_set_mime_type(trans, mime)
 
-        return sanitize_html(html).encode('utf-8')
+        #return sanitize_html(html).encode('utf-8')  #dropped sanitize_html as it removes <summary> tags
+        return html.encode('utf-8')
 
 
 # ISA-Tab class {{{1
