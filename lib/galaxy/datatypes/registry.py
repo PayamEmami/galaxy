@@ -29,6 +29,7 @@ from . import (
 )
 from .display_applications.application import DisplayApplication
 
+log = logging.getLogger(__name__)
 
 class ConfigurationError(Exception):
     pass

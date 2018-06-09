@@ -80,3 +80,6 @@ pysam==0.8.4+gx5
 
 # GenomeSpace dependencies
 python-genomespaceclient==0.1.8
+
+# ISA
+isa-rwval==0.10.1
