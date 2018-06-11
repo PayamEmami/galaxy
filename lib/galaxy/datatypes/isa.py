@@ -318,7 +318,8 @@ class _Isa(data.Data):
                                                      assay.data_files if
                                                      x.label == file_type])
                         for label, filenames in data_files.items():
-                            html += '<details><summary>Data files ({label})</summary>'.format(label=label)
+                            html += '<details><summary>Data files ({num_files} {label})</summary>'.format(
+                                num_files=len(filenames), label=label)
                             html += '<ul>'
                             for filename in filenames:
                                 if filename != '':
