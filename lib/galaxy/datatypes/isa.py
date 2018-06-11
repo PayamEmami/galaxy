@@ -451,15 +451,24 @@ class _Isa(data.Data):
                 # Loop on all assays of this study
                 for assay in study.assays:
                     html += '<h3>Assay %s</h3>' % assay.filename
-                    html += '<p>Measurement type: %s</p>' % assay.measurement_type.term # OntologyAnnotation
-                    html += '<p>Technology type: %s</p>' % assay.technology_type.term # OntologyAnnotation
+                    html += '<p>Measurement type: %s</p>' % assay.measurement_type.term  # OntologyAnnotation
+                    html += '<p>Technology type: %s</p>' % assay.technology_type.term    # OntologyAnnotation
                     html += '<p>Technology platform: %s</p>' % assay.technology_platform
                     if assay.data_files is not None:
-                        html += '<p>Data files:</p>'
-                        html += '<ul>'
-                        for data_file in assay.data_files:
-                            html += '<li>' + str(data_file.id) + ' - ' + str(data_file.filename) + ' - ' + str(data_file.label) + '</li>'
-                        html += '</ul>'
+                        file_types = set(x.label for x in assay.data_files)
+                        data_files = {}
+                        for file_type in file_types:
+                            data_files[file_type] = sorted([x.filename for x in
+                                                     assay.data_files if
+                                                     x.label == file_type])
+                        for label, filenames in data_files.items():
+                            html += '<details><summary>Data files ({num_files} {label})</summary>'.format(
+                                num_files=len(filenames), label=label)
+                            html += '<ul>'
+                            for filename in filenames:
+                                if filename != '':
+                                    html += '<li>' + escape(util.unicodify(str(filename), 'utf-8')) + '</li>'
+                            html += '</ul></details>'
 
             html += '</body></html>'
 
