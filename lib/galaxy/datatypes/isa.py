@@ -11,19 +11,17 @@ import re
 import os
 import os.path
 import sys
-import glob
 import json
 import shutil
 import zipfile
 import logging
 import tarfile
 import tempfile
-import csv
+import itertools
 # Imports isatab after turning off warnings inside logger settings to avoid pandas warning making uploads fail.
 logging.getLogger("isatools.isatab").setLevel(logging.ERROR)
 from isatools import isatab
 from isatools import isajson
-from json import dumps
 from io import BytesIO
 from cgi import escape
 from galaxy import util
@@ -453,14 +451,11 @@ class _Isa(data.Data):
                     html += '<p>Measurement type: %s</p>' % assay.measurement_type.term  # OntologyAnnotation
                     html += '<p>Technology type: %s</p>' % assay.technology_type.term    # OntologyAnnotation
                     html += '<p>Technology platform: %s</p>' % assay.technology_platform
-                    if assay.data_files is not None:
-                        file_types = set(x.label for x in assay.data_files)
-                        data_files = {}
-                        for file_type in file_types:
-                            data_files[file_type] = sorted([x.filename for x in
-                                                     assay.data_files if
-                                                     x.label == file_type])
-                        for label, filenames in data_files.items():
+                    if assay.data_files:
+                        data_files = itertools.groupby(sorted(
+                            (x.label, x.filename) for x in assay.data_files),
+                                                       lambda x: x[0])
+                        for label, filenames in data_files.iteritems():
                             html += '<details><summary>Data files ({num_files} {label})</summary>'.format(
                                 num_files=len(filenames), label=label)
                             html += '<ul>'
