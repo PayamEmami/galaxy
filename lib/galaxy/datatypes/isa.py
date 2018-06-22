@@ -455,7 +455,7 @@ class _Isa(data.Data):
                         data_files = itertools.groupby(sorted(
                             (x.label, x.filename) for x in assay.data_files),
                                                        lambda x: x[0])
-                        for label, filenames in data_files.iteritems():
+                        for label, filenames in data_files:
                             html += '<details><summary>Data files ({num_files} {label})</summary>'.format(
                                 num_files=len(filenames), label=label)
                             html += '<ul>'
