@@ -38,7 +38,7 @@ ${h.js( 'libs/jquery/jquery',
         'ui/pagination',
         'mvc/visualization/visualization-model' )}
 
-${h.javascript_link( root + 'plugins/visualizations/isatab/static/js/ISATabViewer.js' )}
+${h.javascript_link( root + 'plugins/visualizations/isatab-viewer/static/js/ISATabViewer.js' )}
 
 <script type="text/javascript">
 function getModel(){
