@@ -1,64 +1,44 @@
 <!DOCTYPE HTML>
+<%
+
+    ## generates hash (hdadict['id']) of history item
+    hdadict = trans.security.encode_dict_ids( hda.to_dict() )
+
+    ## finds the parent directory of galaxy ( /, /galaxy, etc.)
+    root = h.url_for( '/' )
+
+    ## determines the exposed URL  of the ./static/ directory
+    app_root = root + 'static/plugins/visualizations/' + visualization_name + '/static'
+
+    ## actual file URL:
+    file_url =  root + 'datasets/' + hdadict['id'] + "/display?to_ext=" + hda.ext;
+%>
 <html>
-<head lang="en">
-    <meta charset="UTF-8">
-    <title>${hda.name | h} | ${visualization_name}</title>
-    <%
+    <head lang="en">
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+        <title>${hda.name | h} | ${visualization_name}</title>
+        ${h.javascript_link( app_root + '/js/handlebars-v1.3.0.js' )}
+        ${h.javascript_link( app_root + '/js/jquery-1.11.1.min.js' )}
+        ${h.stylesheet_link( app_root + '/css/ISATabViewer.css' )}
+        ${h.javascript_link( app_root + '/js/ISATabViewer.js' )}
 
-        ## generates hash (hdadict['id']) of history item
-        hdadict = trans.security.encode_dict_ids( hda.to_dict() )
+    </head>
 
-        ## finds the parent directory of galaxy ( /, /galaxy, etc.)
-        root = h.url_for( '/' )
+    <body>
 
-        ## determines the exposed URL  of the ./static/ directory
-        app_root = root + 'plugins/visualizations/' + visualization_name + '/static'
-
-        ## actual file URL:
-        file_url =  root + 'datasets/' + hdadict['id'] + "/display?to_ext=" + hda.ext;
-    %>
-
-## ----------------------------------------------------------------------------
-${h.css( 'base', 'jquery-ui/smoothness/jquery-ui')}
-${h.stylesheet_link( root + 'plugins/visualizations/isa/static/css/ISATabViewer.css' )}
-
-## ----------------------------------------------------------------------------
-<script type="text/javascript">
-// TODO: blah
-window.Galaxy = { root: '${ root }' };
-</script>
-${h.js( 'libs/jquery/jquery',
-        'libs/jquery/jquery.migrate',
-        'libs/jquery/jquery-ui',
-        'libs/bootstrap',
-        'libs/underscore',
-        'libs/backbone',
-        'libs/d3',
-        'ui/peek-column-selector',
-        'ui/pagination',
-        'mvc/visualization/visualization-model' )}
-
-${h.javascript_link( root + 'plugins/visualizations/isatab-viewer/static/js/ISATabViewer.js' )}
-
-<script type="text/javascript">
-function getModel(){
-    return new ScatterplotModel({
-        id      : ${h.dumps( visualization_id )} || undefined,
-        title   : "${title or default_title}",
-        config  : ${h.dumps( config, indent=2 )}
-    });
-}
-function getHDAJSON(){
-    return ${h.dumps( trans.security.encode_dict_ids( hda.to_dict() ), indent=2 )};
-}
-</script>
+        <script type="text/javascript">
+            ISATabViewer.rendering.render_isatab_from_gist('c3c4306af5916856c607', '#investigation_file', {});
+        </script>
 
 
+        <div class="isa-study-list">
+            <h3>ISA-Tab files</h3>
+            <ul id="study-list">
+            </ul>
+        </div>
 
-</head>
-<body>
-
-<div id="investigation_file" class="isa-view">
+    <div id="investigation_file" class="isa-view">
 
     <!-- Load from gist -->
     <div class="toolbar">
@@ -85,28 +65,6 @@ function getHDAJSON(){
         <div id="study-info"></div>
     </div>
 </div>
-
-<link href="static/css/ISATabViewer.css" rel="stylesheet" type="text/css"/>
-<script type="text/javascript" src="static/js/jquery-1.11.1.min.js"></script>
-<script type="text/javascript" src="static/js/handlebars-v1.3.0.js"></script>
-<script type="text/javascript" src="static/js/ISATabViewer.js"></script>
-
-
-<!-- <link href="isaviewer_assets/css/ISATabViewer.css" rel="stylesheet" type="text/css"/>-->
-<!-- <script type="text/javascript" src="isaviewer_assets/js/jquery-1.11.1.min.js"></script>-->
-<!-- <script type="text/javascript" src="isaviewer_assets/js/handlebars-v1.3.0.js"></script>-->
-<!-- <script type="text/javascript" src="isaviewer_assets/js/ISATabViewer.js"></script>-->
-
-
-<script type="text/javascript">
-     ISATabViewer.rendering.render_isatab_from_gist('c3c4306af5916856c607', '#investigation_file', {});
-
-//    ISATabViewer.rendering.render_isatab_from_file('test_data_sets/BII-S-3/i_gilbert.txt', '#investigation_file', {});
-//    ISATabViewer.rendering.render_isatab_from_file('test_data_sets/BII-I-1/i_investigation.txt', '#investigation_file', {});
-//    ISATabViewer.rendering.render_isatab_from_file('test_data_sets/E.carvenicolus-GiGaDB-ISA-tab/i_investigation_100063.txt', '#investigation_file', {});
-//    ISATabViewer.rendering.render_isatab_from_file('test_data_sets/sdata201513-isa1/i_Investigation.txt', '#investigation_file', {});
-//    ISATabViewer.rendering.render_isatab_from_file('test_data_sets/sdata201411-isa1/i_investigation.txt', '#investigation_file', {});
-</script>
 
 <script id="study-list-template" type="text/x-handlebars-template">
 
@@ -344,5 +302,6 @@ function getHDAJSON(){
     }
 </script>
 
-</body>
+
+    </body>
 </html>
