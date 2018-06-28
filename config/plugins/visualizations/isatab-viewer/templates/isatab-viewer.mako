@@ -12,6 +12,10 @@
 
     ## actual file URL:
     file_url =  root + 'datasets/' + hdadict['id'] + "/display?to_ext=" + hda.ext;
+
+    rawdatadict = hda.get_raw_data()
+
+    entrypoint = next(x for x in rawdatadict.keys() if x.startswith('i_') and x.endswith('.txt'))
 %>
 <html>
     <head lang="en">
@@ -28,7 +32,7 @@
     <body>
 
         <script type="text/javascript">
-            ISATabViewer.rendering.render_isatab_from_gist('c3c4306af5916856c607', '#investigation_file', {});
+            ISATabViewer.rendering.render_isatab_from_galaxy('${entrypoint}', ${rawdatadict}, '#investigation_file', {});
         </script>
 
 
@@ -42,11 +46,8 @@
 
     <!-- Load from gist -->
     <div class="toolbar">
-        Load ISA-Tab file to view <input type="text" name="gist" id="gist_id"><span class="btn btn-green"
-                                                                                    onclick="load_file()">Load File</span>
-
-        <div style="float: right; margin-right: 25px; margin-top: 3px" id="download-button">
-        </div>
+        Load ISA-Tab file to view <input type="text" name="gist" id="gist_id"><span class="btn btn-green" onclick="load_file()">Load File</span>
+        <div style="float: right; margin-right: 25px; margin-top: 3px" id="download-button"/>
     </div>
     <!-- end of load from gist -->
 

@@ -105,6 +105,64 @@ ISATabViewer.rendering = {
         return ISATabViewer.investigation;
     },
 
+    process_rawdatadict: function (entrypoint, rawdatadict, placement) {
+        var file_contents;
+        file_contents = rawdatadict[entrypoint]
+        var lines = file_contents.split(/\r\n|\r|\n/g);
+        var current_section = "";
+        var current_study;
+
+        for (var line in lines) {
+            //console.log(line +":"+ lines[line]);
+            var __ret = ISATabViewer.rendering.process_investigation_file_line(lines[line], current_study, current_section);
+            if (__ret != undefined) {
+                current_study = __ret.current_study;
+                current_section = __ret.current_section;
+            }
+        }
+
+        if (current_study != undefined)
+            ISATabViewer.investigation["STUDY"].push(current_study);
+
+        ISATabViewer.rendering.render_study_list(placement);
+
+        for (var study_index in ISATabViewer.investigation.STUDY) {
+
+            var study_information = ISATabViewer.investigation.STUDY[study_index];
+            var study_file = ISATabViewer.rendering.replace_str("\"", "", study_information.STUDY["Study File Name"][0]);
+
+            $.ajax({
+                success: function () {
+                    var processed_characteristics = ISATabViewer.rendering.process_assay_file(study_file, rawdatadict[study_file]);
+
+                    ISATabViewer.spreadsheets.files[study_file]["stats"] = processed_characteristics;
+
+                    if ($('#sample-distribution').length) {
+                        var sample_stats = ISATabViewer.rendering.process_study_sample_statistics(processed_characteristics);
+
+                        var source = $("#sample-distribution-template").html();
+                        var template = Handlebars.compile(source);
+                        var html = template({"sample_stats": sample_stats});
+                        $("#sample-distribution").html(html);
+                    }
+                }
+            });
+
+            var assays = ISATabViewer.rendering.generate_records(study_information, "STUDY ASSAYS");
+
+            for (var assay in assays) {
+                $.ajax({
+                    success: function() {
+                        var assay_file;
+                        assay_file = assays[assay]["Study Assay File Name"]
+                        ISATabViewer.rendering.process_assay_file(assay_file, rawdatadict[assay_file]);
+                    }
+                });
+            }
+        }
+
+        return ISATabViewer.investigation
+    },
 
     /**
      * Processes each line of the investigation file.
@@ -569,6 +627,17 @@ ISATabViewer.rendering = {
                 ISATabViewer.investigation.STUDY = [];
                 investigation = ISATabViewer.rendering.process_file(investigation_file, file, placement);
                 //invCallBack(investigation);
+            }
+        });
+    },
+
+    render_isatab_from_galaxy: function (entrypoint, rawdatadict, placement, options, invCallBack) {
+
+        $.ajax({
+            success: function () {
+                ISATabViewer.investigation.STUDY = [];
+                var investigation;
+                investigation = ISATabViewer.rendering.process_rawdatadict(entrypoint, rawdatadict, placement)
             }
         });
     },
