@@ -222,7 +222,7 @@ class _Isa(data.Data):
            as well as a list of the composite files that it contains."""
 
         if dataset:
-            rval = ['<html><head><title>ISA Dataset </title></head><p/>']
+            rval = ['<html><head><title>ISA Dataset</title></head><p/>']
             if hasattr(dataset, "extra_files_path"):
                 rval.append('<div>ISA Dataset composed of the following files:<p/><ul>')
                 for cmp_file in os.listdir(dataset.extra_files_path):
@@ -232,6 +232,23 @@ class _Isa(data.Data):
                 rval.append('<div>ISA Dataset is empty!<p/><ul>')
             return "\n".join(rval)
         return "<div>No dataset available</div>"
+
+    # Generate raw data descriptor {{{2
+    ################################################################
+
+    def get_raw_data(self, dataset=None):
+        isa_folder = self._get_isa_folder_path(dataset)
+        filenames = []
+        isa = self._get_investigation(dataset=dataset)
+        filenames.append(isa.filename)
+        for study in isa.studies:
+            filenames.append(study.filename)
+            for assay in study.assays:
+                filenames.append(assay.filename)
+        return {
+            os.path.basename(x): open(os.path.join(isa_folder, x)).read() for x
+            in filenames
+        }
 
     # Dataset content needs grooming {{{2
     ################################################################
@@ -346,6 +363,7 @@ class IsaTab(_Isa):
     def __init__(self, **kwd):
         super(IsaTab, self).__init__(main_file_regex=INVESTIGATION_FILE_REGEX, **kwd)
 
+
     # Make investigation instance {{{2
     ################################################################
 
@@ -356,14 +374,19 @@ class IsaTab(_Isa):
         isa_dir = os.path.dirname(filename)
         fp = utf8_text_file_open(filename)
         parser.parse(fp)
+        fp.seek(0)
+        parser.isa.raw = fp.read()
         for study in parser.isa.studies:
+            with open(os.path.join(isa_dir, study.filename)) as fp:
+                study.raw = fp.read()
             s_parser = isatab_meta.LazyStudySampleTableParser(parser.isa)
             s_parser.parse(os.path.join(isa_dir, study.filename))
             for assay in study.assays:
+                with open(os.path.join(isa_dir, assay.filename)) as fp:
+                    assay.raw = fp.read()
                 a_parser = isatab_meta.LazyAssayTableParser(parser.isa)
                 a_parser.parse(os.path.join(isa_dir, assay.filename))
         isa = parser.isa
-
         return isa
 
 
