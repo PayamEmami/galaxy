@@ -20,7 +20,7 @@ import tempfile
 import itertools
 # Imports isatab after turning off warnings inside logger settings to avoid pandas warning making uploads fail.
 logging.getLogger("isatools.isatab").setLevel(logging.ERROR)
-from isatools import isatab
+from isatools import isatab_meta
 from isatools import isajson
 from io import BytesIO
 from cgi import escape
@@ -68,7 +68,7 @@ logger.setLevel(logging.ERROR)
 ################################################################
 
 def utf8_text_file_open(path):
-    if sys.version_info[0] < 3: 
+    if sys.version_info[0] < 3:
         fp = open(path, 'rb')
     else:
         fp = open(path, 'r', newline='', encoding='utf8')
@@ -136,7 +136,7 @@ class _Isa(data.Data):
             # Get ISA archive older
             isa_files = os.listdir(isa_folder)
 
-            # Try to find main file 
+            # Try to find main file
             main_file = self._find_main_file_in_archive(isa_files)
 
             if main_file is None:
@@ -365,6 +365,24 @@ class _Isa(data.Data):
             return "\n".join(rval)
         return "<div>No dataset available</div>"
 
+
+    # Generate raw data descriptor {{{2
+    ################################################################
+
+    def get_raw_data(self, dataset=None):
+        isa_folder = self._get_isa_folder_path(dataset)
+        filenames = []
+        isa = self._get_investigation(dataset=dataset)
+        filenames.append(isa.filename)
+        for study in isa.studies:
+            filenames.append(study.filename)
+            for assay in study.assays:
+                filenames.append(assay.filename)
+        return {
+            os.path.basename(x): open(os.path.join(isa_folder, x)).read() for x
+            in filenames
+        }
+
     # Dataset content needs grooming {{{2
     ################################################################
 
@@ -455,21 +473,22 @@ class _Isa(data.Data):
                         data_files = itertools.groupby(sorted(
                             (x.label, x.filename) for x in assay.data_files),
                                                        lambda x: x[0])
-                        for label, filenames in data_files:
-                            html += '<details><summary>Data files ({num_files} {label})</summary>'.format(
-                                num_files=len(filenames), label=label)
-                            html += '<ul>'
-                            for filename in filenames:
-                                if filename != '':
-                                    html += '<li>' + escape(util.unicodify(str(filename), 'utf-8')) + '</li>'
-                            html += '</ul></details>'
+                        for label, ifnames in data_files:
+                            fnames = list(x[1] for x in ifnames if x[1].strip())
+                            if len(fnames) > 0:
+                                html += '<details><summary>Data files ({num_files} {label})</summary>'.format(
+                                    num_files=len(fnames), label=label)
+                                html += '<ul>'
+                                for filename in fnames:
+                                    if filename != '':
+                                        html += '<li>' + filename + '</li>'
+                                html += '</ul></details>'
 
         # Set mime type
         mime = 'text/html'
         self._clean_and_set_mime_type(trans, mime)
 
-        #return sanitize_html(html).encode('utf-8')  #dropped sanitize_html as it removes <summary> tags
-        return html.encode('utf-8')
+        return sanitize_html(html).encode('utf-8')
 
 # ISA-Tab class {{{1
 ################################################################
@@ -489,11 +508,23 @@ class IsaTab(_Isa):
     def _make_investigation_instance(self, filename):
 
         # Parse ISA-Tab investigation file
-        parser = isatab.InvestigationParser()
+        parser = isatab_meta.InvestigationParser()
+        isa_dir = os.path.dirname(filename)
         fp = utf8_text_file_open(filename)
         parser.parse(fp)
+        fp.seek(0)
+        parser.isa.raw = fp.read()
+        for study in parser.isa.studies:
+            with open(os.path.join(isa_dir, study.filename)) as fp:
+                study.raw = fp.read()
+            s_parser = isatab_meta.LazyStudySampleTableParser(parser.isa)
+            s_parser.parse(os.path.join(isa_dir, study.filename))
+            for assay in study.assays:
+                with open(os.path.join(isa_dir, assay.filename)) as fp:
+                    assay.raw = fp.read()
+                a_parser = isatab_meta.LazyAssayTableParser(parser.isa)
+                a_parser.parse(os.path.join(isa_dir, assay.filename))
         isa = parser.isa
-
         return isa
 
 # ISA-JSON class {{{1

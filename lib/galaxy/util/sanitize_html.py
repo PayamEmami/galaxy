@@ -195,8 +195,8 @@ class _HTMLSanitizer(_BaseHTMLProcessor):
                            'menu', 'meter', 'multicol', 'nav', 'nextid', 'ol', 'output', 'optgroup',
                            'option', 'p', 'pre', 'progress', 'q', 's', 'samp', 'section', 'select',
                            'small', 'sound', 'source', 'spacer', 'span', 'strike', 'strong', 'sub',
-                           'sup', 'table', 'tbody', 'td', 'textarea', 'time', 'tfoot', 'th', 'thead',
-                           'tr', 'tt', 'u', 'ul', 'var', 'video', 'noscript']
+                           'summary', 'sup', 'table', 'tbody', 'td', 'textarea', 'time', 'tfoot', 'th',
+                           'thead', 'tr', 'tt', 'u', 'ul', 'var', 'video', 'noscript']
 
     acceptable_attributes = ['abbr', 'accept', 'accept-charset', 'accesskey',
                              'action', 'align', 'alt', 'autocomplete', 'autofocus', 'axis',
