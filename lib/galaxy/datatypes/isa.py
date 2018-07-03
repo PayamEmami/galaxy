@@ -347,8 +347,7 @@ class _Isa(data.Data):
         mime = 'text/html'
         self._clean_and_set_mime_type(trans, mime)
 
-        #return sanitize_html(html).encode('utf-8')  #dropped sanitize_html as it removes <summary> tags
-        return html.encode('utf-8')
+        return sanitize_html(html).encode('utf-8')
 
 
 # ISA-Tab class {{{1

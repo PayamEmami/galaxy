@@ -13,8 +13,8 @@ _acceptable_elements = ['a', 'abbr', 'acronym', 'address', 'area', 'article',
         'li', 'm', 'map', 'menu', 'meter', 'multicol', 'nav', 'nextid', 'ol',
         'output', 'optgroup', 'option', 'p', 'pre', 'progress', 'q', 's',
         'samp', 'section', 'select', 'small', 'sound', 'source', 'spacer',
-        'span', 'strike', 'strong', 'sub', 'sup', 'table', 'tbody', 'td',
-        'textarea', 'time', 'tfoot', 'th', 'thead', 'tr', 'tt', 'u', 'ul',
+        'span', 'strike', 'strong', 'sub', 'summary', 'sup', 'table', 'tbody',
+        'td', 'textarea', 'time', 'tfoot', 'th', 'thead', 'tr', 'tt', 'u', 'ul',
         'var', 'video', 'noscript']
 
 _acceptable_attributes = ['abbr', 'accept', 'accept-charset', 'accesskey',
