@@ -479,9 +479,14 @@ class _Isa(data.Data):
                                 html += '<details><summary>Data files ({num_files} {label})</summary>'.format(
                                     num_files=len(fnames), label=label)
                                 html += '<ul>'
+                                isa_folder = self._get_isa_folder_path(dataset)
                                 for filename in fnames:
                                     if filename != '':
-                                        html += '<li>' + filename + '</li>'
+                                        if not os.path.isfile(os.path.join(isa_folder, filename)):
+                                            filestat = ' (not found)'
+                                        else:
+                                            filestat = ''
+                                        html += '<li>' + filename + filestat + '</li>'
                                 html += '</ul></details>'
 
         # Set mime type
