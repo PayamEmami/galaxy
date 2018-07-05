@@ -11,19 +11,17 @@ import re
 import os
 import os.path
 import sys
-import glob
 import json
 import shutil
 import zipfile
 import logging
 import tarfile
 import tempfile
-import csv
+import itertools
 # Imports isatab after turning off warnings inside logger settings to avoid pandas warning making uploads fail.
 logging.getLogger("isatools.isatab").setLevel(logging.ERROR)
-from isatools import isatab
+from isatools import isatab_meta
 from isatools import isajson
-from json import dumps
 from io import BytesIO
 from cgi import escape
 from galaxy import util
@@ -70,7 +68,7 @@ logger.setLevel(logging.ERROR)
 ################################################################
 
 def utf8_text_file_open(path):
-    if sys.version_info[0] < 3: 
+    if sys.version_info[0] < 3:
         fp = open(path, 'rb')
     else:
         fp = open(path, 'r', newline='', encoding='utf8')
@@ -138,7 +136,7 @@ class _Isa(data.Data):
             # Get ISA archive older
             isa_files = os.listdir(isa_folder)
 
-            # Try to find main file 
+            # Try to find main file
             main_file = self._find_main_file_in_archive(isa_files)
 
             if main_file is None:
@@ -355,7 +353,7 @@ class _Isa(data.Data):
            as well as a list of the composite files that it contains."""
 
         if dataset:
-            rval = ['<html><head><title>ISA Dataset </title></head><p/>']
+            rval = ['<html><head><title>ISA Dataset</title></head><p/>']
             if hasattr(dataset, "extra_files_path"):
                 rval.append('<div>ISA Dataset composed of the following files:<p/><ul>')
                 for cmp_file in os.listdir(dataset.extra_files_path):
@@ -366,6 +364,24 @@ class _Isa(data.Data):
                 rval.append('<div>ISA Dataset is empty!<p/><ul>')
             return "\n".join(rval)
         return "<div>No dataset available</div>"
+
+
+    # Generate raw data descriptor {{{2
+    ################################################################
+
+    def get_raw_data(self, dataset=None):
+        isa_folder = self._get_isa_folder_path(dataset)
+        filenames = []
+        isa = self._get_investigation(dataset=dataset)
+        filenames.append(isa.filename)
+        for study in isa.studies:
+            filenames.append(study.filename)
+            for assay in study.assays:
+                filenames.append(assay.filename)
+        return {
+            os.path.basename(x): open(os.path.join(isa_folder, x)).read() for x
+            in filenames
+        }
 
     # Dataset content needs grooming {{{2
     ################################################################
@@ -416,13 +432,11 @@ class _Isa(data.Data):
     # Display data {{{2
     ################################################################
 
-
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
         """Downloads the ISA dataset if `preview` is `False`;
            if `preview` is `True`, it returns a preview of the ISA dataset as a HTML page.
            The preview is triggered when user clicks on the eye icon of the composite dataset."""
 
-        self._set_dataset_name(dataset)
         # if it is not required a preview use the default behaviour of `display_data`
         if not preview:
             return super(_Isa, self).display_data(trans, dataset, preview, filename, to_ext, **kwd)
@@ -430,8 +444,7 @@ class _Isa(data.Data):
         # prepare the preview of the ISA dataset
         investigation = self._get_investigation(dataset)
         if investigation is None:
-            html = """<html><header><title>Error while reading ISA archive.</title></header>
-                   <body>
+            html = """<html><body>
                         <h1>An error occured while reading content of ISA archive.</h1>
                         <p>If you have tried to load your archive with the uploader by selecting isa-tab as composite data type, then try to load it again with isa-json instead. Conversely, if you have tried to load your archive with the uploader by selecting isa-json as composite data type, then try isa-tab instead.</p>
                         <p>You may also try to look into your zip file in order to find out if this is a proper ISA archive. If you see a file i_Investigation.txt inside, then it is an ISA-Tab archive. If you see a file with extension .json inside, then it is an ISA-JSON archive. If you see nothing like that, then either your ISA archive is corrupted, or it is not an ISA archive.</p>
@@ -448,20 +461,33 @@ class _Isa(data.Data):
                 html += '<p>Submitted the %s</p>' % study.submission_date
                 html += '<p>Released on %s</p>' % study.public_release_date
 
+                html += '<p>Experimental factors used: %s</p>' % ', '.join([x.name for x in study.factors])
+
                 # Loop on all assays of this study
                 for assay in study.assays:
                     html += '<h3>Assay %s</h3>' % assay.filename
-                    html += '<p>Measurement type: %s</p>' % assay.measurement_type.term # OntologyAnnotation
-                    html += '<p>Technology type: %s</p>' % assay.technology_type.term # OntologyAnnotation
+                    html += '<p>Measurement type: %s</p>' % assay.measurement_type.term  # OntologyAnnotation
+                    html += '<p>Technology type: %s</p>' % assay.technology_type.term    # OntologyAnnotation
                     html += '<p>Technology platform: %s</p>' % assay.technology_platform
-                    if assay.data_files is not None:
-                        html += '<p>Data files:</p>'
-                        html += '<ul>'
-                        for data_file in assay.data_files:
-                            html += '<li>' + str(data_file.id) + ' - ' + str(data_file.filename) + ' - ' + str(data_file.label) + '</li>'
-                        html += '</ul>'
-
-            html += '</body></html>'
+                    if assay.data_files:
+                        data_files = itertools.groupby(sorted(
+                            (x.label, x.filename) for x in assay.data_files),
+                                                       lambda x: x[0])
+                        for label, ifnames in data_files:
+                            fnames = list(x[1] for x in ifnames if x[1].strip())
+                            if len(fnames) > 0:
+                                html += '<details><summary>Data files ({num_files} {label})</summary>'.format(
+                                    num_files=len(fnames), label=label)
+                                html += '<ul>'
+                                isa_folder = self._get_isa_folder_path(dataset)
+                                for filename in fnames:
+                                    if filename != '':
+                                        if not os.path.isfile(os.path.join(isa_folder, filename)):
+                                            filestat = ' (not found)'
+                                        else:
+                                            filestat = ''
+                                        html += '<li>' + filename + filestat + '</li>'
+                                html += '</ul></details>'
 
         # Set mime type
         mime = 'text/html'
@@ -487,11 +513,23 @@ class IsaTab(_Isa):
     def _make_investigation_instance(self, filename):
 
         # Parse ISA-Tab investigation file
-        parser = isatab.InvestigationParser()
+        parser = isatab_meta.InvestigationParser()
+        isa_dir = os.path.dirname(filename)
         fp = utf8_text_file_open(filename)
         parser.parse(fp)
+        fp.seek(0)
+        parser.isa.raw = fp.read()
+        for study in parser.isa.studies:
+            with open(os.path.join(isa_dir, study.filename)) as fp:
+                study.raw = fp.read()
+            s_parser = isatab_meta.LazyStudySampleTableParser(parser.isa)
+            s_parser.parse(os.path.join(isa_dir, study.filename))
+            for assay in study.assays:
+                with open(os.path.join(isa_dir, assay.filename)) as fp:
+                    assay.raw = fp.read()
+                a_parser = isatab_meta.LazyAssayTableParser(parser.isa)
+                a_parser.parse(os.path.join(isa_dir, assay.filename))
         isa = parser.isa
-
         return isa
 
 # ISA-JSON class {{{1
