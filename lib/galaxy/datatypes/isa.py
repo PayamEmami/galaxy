@@ -26,6 +26,7 @@ from io import BytesIO
 from cgi import escape
 from galaxy import util
 from galaxy.datatypes import data
+from galaxy.datatypes import metadata
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy import model
 
@@ -430,7 +431,6 @@ class _Isa(data.Data):
 
     # Display data {{{2
     ################################################################
-
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
         """Downloads the ISA dataset if `preview` is `False`;
