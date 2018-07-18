@@ -92,4 +92,4 @@ ecdsa==0.13
 python-genomespaceclient==0.1.8
 
 # ISA
-isa-rwval==0.10.6
+isa-rwval==0.10.7
